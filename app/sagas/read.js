@@ -7,6 +7,7 @@ import RequestUtil from '../utils/RequestUtil';
 import { ARTICLE_LIST,ARTICLE_DETAIL } from '../constants/Urls';
 import { fetchArticleList, receiveArticleList } from '../actions/read';
 
+
 export function* requestArticleDetail(id) {
     try {
         const articleDetail = yield call(

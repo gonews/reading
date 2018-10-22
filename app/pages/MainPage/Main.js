@@ -6,7 +6,8 @@ import {
   InteractionManager,
   ListView,
   StyleSheet,
-  View
+  View,
+    Text
 } from 'react-native';
 import ScrollableTabView, { ScrollableTabBar } from 'react-native-scrollable-tab-view';
 import store from 'react-native-simple-store';
@@ -19,6 +20,11 @@ import ItemCell from './ItemCell';
 import Footer from './Footer';
 import EmptyView from './EmptyView';
 import ItemListView from './ItemListView';
+
+import { graphql } from 'react-apollo';
+import gql from 'graphql-tag'
+import ReadList from './ReadList'
+
 
 const propTypes = {
   readActions: PropTypes.object,
@@ -43,33 +49,6 @@ class Main extends React.Component {
 
   componentDidMount() {
     const { readActions } = this.props;
-    // DeviceEventEmitter.addListener('changeCategory', (typeIds) => {
-    //   typeIds.forEach((typeId) => {
-    //     readActions.requestArticleList(false, true, typeId);
-    //     pages.push(1);
-    //   });
-    //   this.setState({
-    //     typeIds
-    //   });
-    // });
-    InteractionManager.runAfterInteractions(() => {
-        readActions.requestArticleList(false, true, 1);
-        pages.push(1);
-      // store.get('typeIds').then((typeIds) => {
-      //   if (!typeIds) {
-      //     return;
-      //   }
-      //   typeIds.forEach((typeId) => {
-      //     readActions.requestArticleList(false, true, typeId);
-      //     pages.push(1);
-      //   });
-      //   store.get('typeList').then(typeList =>
-      //     this.setState({
-      //       typeIds,
-      //       typeList
-      //     }));
-      // });
-    });
   }
 
   componentWillReceiveProps(nextProps) {
@@ -94,12 +73,12 @@ class Main extends React.Component {
   }
 
   onRefresh = (typeId) => {
-    const { readActions } = this.props;
-    readActions.requestArticleList(true, false, typeId);
-    const index = this.state.typeIds.indexOf(typeId);
-    if (index >= 0) {
-      pages[index] = 1;
-    }
+    // const { readActions } = this.props;
+    // readActions.requestArticleList(true, false, typeId);
+    // const index = this.state.typeIds.indexOf(typeId);
+    // if (index >= 0) {
+    //   pages[index] = 1;
+    // }
   };
 
   onPress = (article) => {
@@ -112,41 +91,43 @@ class Main extends React.Component {
   };
 
   onEndReached = (typeId) => {
-    currentLoadMoreTypeId = typeId;
-    const time = Date.parse(new Date()) / 1000;
-    const index = this.state.typeIds.indexOf(typeId);
-    if (index < 0) {
-      return;
-    }
-    if (time - loadMoreTime > 1) {
-      pages[index] += 1;
-      const { readActions } = this.props;
-      readActions.requestArticleList(false, false, typeId, true, pages[index]);
-      loadMoreTime = Date.parse(new Date()) / 1000;
-    }
+    // currentLoadMoreTypeId = typeId;
+    // const time = Date.parse(new Date()) / 1000;
+    // const index = this.state.typeIds.indexOf(typeId);
+    // if (index < 0) {
+    //   return;
+    // }
+    // if (time - loadMoreTime > 1) {
+    //   pages[index] += 1;
+    //   const { readActions } = this.props;
+    //   readActions.requestArticleList(false, false, typeId, true, pages[index]);
+    //   loadMoreTime = Date.parse(new Date()) / 1000;
+    // }
   };
   renderFooter = () => {
     const { read } = this.props;
     return read.isLoadMore ? <Footer /> : <View />;
   };
 
-  renderItem = article => (
-    <ItemCell article={article} onPressHandler={this.onPress} />
-  );
+  renderItem = article => {
+      console.log('art', article);
+      return (<ItemCell article={article} onPressHandler={this.onPress} />);
+  };
 
   renderContent = (dataSource, typeId) => {
+    console.log('dataSource',dataSource);
     const { read } = this.props;
-    if (read.loading) {
-      return <LoadingView />;
-    }
-    const isEmpty =
-      read.articleList[typeId] === undefined ||
-      read.articleList[typeId].length === 0;
-    if (isEmpty) {
-      return (
-        <EmptyView read={read} typeId={typeId} onRefresh={this.onRefresh} />
-      );
-    }
+    // if (read.loading) {
+    //   return <LoadingView />;
+    // }
+    // const isEmpty =
+    //   read.articleList[typeId] === undefined ||
+    //   read.articleList[typeId].length === 0;
+    // if (isEmpty) {
+    //   return (
+    //     <EmptyView read={read} typeId={typeId} onRefresh={this.onRefresh} />
+    //   );
+    // }
     return (
       <ItemListView
         dataSource={dataSource}
@@ -160,19 +141,32 @@ class Main extends React.Component {
     );
   };
 
+
+
+
   render() {
-    const { read } = this.props;
-    const content = this.state.typeList.map((type) => {
-      const typeView = (
-        <View key={type.id} tabLabel={type.name} style={styles.base}>
-          {this.renderContent(
-            this.state.dataSource.cloneWithRows(getArticleList(read.articleList[type.id])),
-            type.id
-          )}
-        </View>
-      );
-      return typeView;
-    });
+      const query = gql`
+      query NewsQuery {
+      news{
+        title
+        content
+        headImg
+        author
+        meta{
+            createdAt
+        }
+      }
+    }
+    `
+      const ViewWithData = graphql(query, {
+        options: {  }
+      })((data)=>{
+          return (
+              <View>
+                  {this.renderContent(this.state.dataSource.cloneWithRows(data.data.news?data.data.news:[]),1)}
+              </View>
+          );
+      })
     return (
       <SafeAreaView style={styles.container}>
         <ScrollableTabView
@@ -187,7 +181,10 @@ class Main extends React.Component {
           tabBarActiveTextColor="#3e9ce9"
           tabBarInactiveTextColor="#aaaaaa"
         >
-          {content}
+          {/*{content}*/}
+          {/*<ViewWithData/>*/}
+          {/*<ReadList/>*/}
+            <ViewWithData/>
         </ScrollableTabView>
       </SafeAreaView>
     );
